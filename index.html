@@ -354,7 +354,7 @@
         timers.push(intervalId);
       }
 
-      // ---------- 场景三：粒子文字与蛋糕聚合 ----------
+      // ---------- 场景三：粒子文字与三层蛋糕聚合 + 循环歌曲 ----------
       function startScene3(){
         // 隐藏聊天区
         sceneChat.style.display = 'none';
@@ -369,14 +369,74 @@
 
         let particles = [];
         let targets = [];
-        let mode = 'text'; // 'text' -> 'cake' -> 'pulse'
+        let mode = 'text'; // possible: 'text' or 'cake' or 'disperse'
         let animationId;
-        const maxParticles = 1400;
+        const maxParticles = 1600;
+
+        // WebAudio：播放 Happy Birthday 循环
+        let audioCtx = null;
+        let audioLoopTimer = null;
+        function startMusicLoop(){
+          if(audioLoopTimer) return;
+          try {
+            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            audioCtx.resume && audioCtx.resume();
+          } catch(e){
+            console.warn('AudioContext error:', e);
+            return;
+          }
+          // melody in Hz and durations (seconds)
+          const notes = [
+            // G  G  A  G  C5 B
+            {f:392.00, d:0.4}, {f:392.00, d:0.4}, {f:440.00, d:0.8}, {f:392.00, d:0.8}, {f:523.25, d:0.8}, {f:493.88, d:1.2},
+            // G  G  A  G  D5 C5
+            {f:392.00, d:0.4}, {f:392.00, d:0.4}, {f:440.00, d:0.8}, {f:392.00, d:0.8}, {f:587.33, d:0.8}, {f:523.25, d:1.2},
+            // G  G  G5 E5 C5 B A
+            {f:392.00, d:0.4}, {f:392.00, d:0.4}, {f:783.99, d:0.8}, {f:659.25, d:0.8}, {f:523.25, d:0.8}, {f:493.88, d:0.8}, {f:440.00, d:1.2},
+            // F5 F5 E5 C5 D5 C5
+            {f:698.46, d:0.4}, {f:698.46, d:0.4}, {f:659.25, d:0.8}, {f:523.25, d:0.8}, {f:587.33, d:0.8}, {f:523.25, d:1.2}
+          ];
+          const totalDur = notes.reduce((s,n)=>s+n.d,0) + 0.2;
+          function scheduleOnce(){
+            const t0 = audioCtx.currentTime + 0.05;
+            let offset = 0;
+            for(const n of notes){
+              playTone(n.f, t0 + offset, n.d*0.95);
+              offset += n.d;
+            }
+            // schedule next loop
+            audioLoopTimer = setTimeout(()=>{ scheduleOnce(); }, totalDur*1000);
+          }
+          scheduleOnce();
+        }
+        function stopMusicLoop(){
+          if(audioLoopTimer){ clearTimeout(audioLoopTimer); audioLoopTimer = null; }
+          if(audioCtx){ audioCtx.close(); audioCtx = null; }
+        }
+        function playTone(freq, startTime, duration){
+          if(!audioCtx) return;
+          const o = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          o.type = 'sine';
+          o.frequency.value = freq;
+          g.gain.value = 0;
+          o.connect(g);
+          g.connect(audioCtx.destination);
+          // envelope
+          g.gain.setValueAtTime(0, startTime);
+          g.gain.linearRampToValueAtTime(0.28, startTime + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+          o.start(startTime);
+          o.stop(startTime + duration + 0.02);
+        }
 
         // helper: sample points from drawn text or shape
         function getPointsFromDraw(funcDraw, sample=6){
           off.width = particleCanvas.width;
           off.height = particleCanvas.height;
+          offCtx.clearRect(0,0,off.width,off.height);
+          // fill background transparent
+          offCtx.fillStyle = "rgba(0,0,0,0)";
           offCtx.clearRect(0,0,off.width,off.height);
           funcDraw(offCtx, off.width, off.height);
           const img = offCtx.getImageData(0,0,off.width,off.height).data;
@@ -392,45 +452,101 @@
           return pts;
         }
 
-        // draw text "生日快乐！" centered (single line)
+        // draw text "生日快乐" centered (single line, larger)
         function drawTextToOff(ctx, w, h){
           ctx.clearRect(0,0,w,h);
           ctx.fillStyle = "#ffffff";
-          const bigSize = Math.round(Math.min(w, h) / 6); // a bit larger for single-line
+          const bigSize = Math.round(Math.min(w, h) / 4.8); // larger
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.font = `bold ${bigSize}px "PingFang SC", "Helvetica Neue", Arial, sans-serif`;
-          ctx.fillText("生日快乐！", w/2, h/2 - 30);
-          // optional smaller subtitle removed to show only "生日快乐！"
+          ctx.fillText("生日快乐", w/2, h/2 - 40);
+          // add a subtle stroke for more particles edge
+          ctx.lineWidth = Math.max(2, Math.round(bigSize/18));
+          ctx.strokeStyle = "#ffd7e6";
+          ctx.strokeText("生日快乐", w/2, h/2 - 40);
         }
 
-        // draw a simple cake shape (rectangle + candle) centered
-        function drawCakeToOff(ctx, w, h){
+        // draw a three-tier cake centered with five candles
+        function drawBigThreeTierCake(ctx, w, h){
           ctx.clearRect(0,0,w,h);
-          const cx = w/2;
-          const cy = h/2 + 60;
-          // cake base
+          const cx = w / 2;
+          const baseY = h / 2 + 120;
+          // dimensions
+          const bottomW = Math.min(w, 900) * 0.5;
+          const bottomH = bottomW * 0.26;
+          const midW = bottomW * 0.72;
+          const midH = bottomH * 0.9;
+          const topW = bottomW * 0.48;
+          const topH = bottomH * 0.84;
+
+          // bottom tier
+          ctx.save();
           ctx.fillStyle = "#ffd1c1";
-          const cakeW = Math.min(w,600) * 0.5;
-          const cakeH = cakeW * 0.36;
-          roundRect(ctx, cx - cakeW/2, cy - cakeH/2, cakeW, cakeH, 18, true, false);
-          // icing layer
+          roundRect(ctx, cx - bottomW/2, baseY - bottomH/2, bottomW, bottomH, 26, true, false);
+          // icing
           ctx.fillStyle = "#fff7f7";
-          roundRect(ctx, cx - cakeW/2, cy - cakeH/2 - 18, cakeW, 36, 22, true, false);
-          // candle
-          const candleX = cx;
-          const candleY = cy - cakeH/2 - 52;
-          ctx.fillStyle = "#ffee58";
-          roundRect(ctx, candleX - 6, candleY, 12, 44, 4, true, false);
-          // flame
-          const g = ctx.createRadialGradient(candleX, candleY-10,2,candleX, candleY-22,18);
-          g.addColorStop(0,'#fff1b4');
-          g.addColorStop(0.5,'#ffb74d');
-          g.addColorStop(1,'#ff7043');
-          ctx.fillStyle = g;
-          ctx.beginPath();
-          ctx.ellipse(candleX, candleY-22, 10, 14, 0, 0, Math.PI*2);
-          ctx.fill();
+          roundRect(ctx, cx - bottomW/2, baseY - bottomH/2 - 22, bottomW, 44, 26, true, false);
+          ctx.restore();
+
+          // middle tier
+          ctx.save();
+          ctx.fillStyle = "#ffecb3";
+          roundRect(ctx, cx - midW/2, baseY - bottomH - midH/2 - 10, midW, midH, 20, true, false);
+          // icing
+          ctx.fillStyle = "#fffdf6";
+          roundRect(ctx, cx - midW/2, baseY - bottomH - midH/2 - 30, midW, 36, 20, true, false);
+          ctx.restore();
+
+          // top tier
+          ctx.save();
+          ctx.fillStyle = "#ffd7e6";
+          roundRect(ctx, cx - topW/2, baseY - bottomH - midH - topH/2 - 28, topW, topH, 16, true, false);
+          // icing
+          ctx.fillStyle = "#fff7ff";
+          roundRect(ctx, cx - topW/2, baseY - bottomH - midH - topH/2 - 44, topW, 32, 16, true, false);
+          ctx.restore();
+
+          // decorations (sprinkles dots)
+          ctx.save();
+          const decoColors = ["#ff8a80","#ffcc80","#80d8ff","#ffd180","#ea80fc"];
+          for(let i=0;i<28;i++){
+            const rx = cx - bottomW/2 + 20 + Math.random()*(bottomW - 40);
+            const ry = baseY - bottomH/2 + Math.random()*(bottomH - 14) - 6;
+            ctx.fillStyle = decoColors[i % decoColors.length];
+            ctx.beginPath();
+            ctx.arc(rx, ry, 3.2, 0, Math.PI*2);
+            ctx.fill();
+          }
+          ctx.restore();
+
+          // five candles on top of top tier
+          const candleCount = 5;
+          const candleSpacing = Math.min(topW * 0.78 / candleCount, 36);
+          const startX = cx - (candleCount-1)/2 * candleSpacing;
+          const candleTopY = baseY - bottomH - midH - topH - 46;
+          for(let i=0;i<candleCount;i++){
+            const x = startX + i * candleSpacing;
+            const y = candleTopY;
+            // candle body
+            ctx.fillStyle = ["#ff8a80","#ffd180","#80d8ff","#b39ddb","#a5d6a7"][i%5];
+            roundRect(ctx, x-6, y, 12, 46, 4, true, false);
+            // flame
+            const g = ctx.createRadialGradient(x, y-12,2, x, y-26,18);
+            g.addColorStop(0,'#fff6c8');
+            g.addColorStop(0.5,'#ffd27a');
+            g.addColorStop(1,'#ff7043');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.ellipse(x, y-24, 8, 12, 0, 0, Math.PI*2);
+            ctx.fill();
+          }
+
+          // small plate under cake
+          ctx.save();
+          ctx.fillStyle = "rgba(0,0,0,0.06)";
+          roundRect(ctx, cx - bottomW/2 - 30, baseY + bottomH/2 + 8, bottomW + 60, 16, 8, true, false);
+          ctx.restore();
         }
 
         function roundRect(ctx,x,y,w,h,r, fill, stroke){
@@ -489,7 +605,13 @@
             p.tx = t.x + (Math.random()-0.5)*2;
             p.ty = t.y + (Math.random()-0.5)*2;
             p.size = Math.random()*1.8 + 0.7;
-            p.color = (mode === 'cake') ? `hsl(${Math.random()*30 + 10}deg 80% 70%)` : `hsl(${Math.random()*350}deg 80% 70%)`;
+            if(mode === 'cake'){
+              p.color = `hsl(${Math.random()*45 + 10}deg 85% ${Math.random()*15 + 55}%)`; // warm cake colors
+            } else if(mode === 'text'){
+              p.color = `hsl(${Math.random()*320}deg 80% 70%)`; // colorful for text
+            } else {
+              p.color = `hsl(${Math.random()*360}deg 80% 70%)`;
+            }
           }
         }
 
@@ -507,8 +629,8 @@
           for(let i=0;i<particles.length;i++){
             const p = particles[i];
             // easing
-            p.vx += (p.tx - p.x) * 0.02;
-            p.vy += (p.ty - p.y) * 0.02;
+            p.vx += (p.tx - p.x) * 0.025;
+            p.vy += (p.ty - p.y) * 0.025;
             // damping
             p.vx *= 0.88;
             p.vy *= 0.88;
@@ -527,61 +649,66 @@
           animationId = requestAnimationFrame(animate);
         }
 
-        // sequence control: text -> cake -> continuous cake pulse
+        // sequence control: text <-> cake repeated, with small disperses for breathing
         (async function sequence(){
-          // form text
+          // start music loop (user already interacted earlier)
+          startMusicLoop();
+
+          // start with a prominent text
           mode = 'text';
           let pts = getPointsFromDraw(drawTextToOff, 6);
           if(pts.length === 0) pts = [{x:particleCanvas.width/2,y:particleCanvas.height/2}];
           initParticles(Math.min(pts.length, maxParticles));
           assignTargets(pts);
-          // animate for some time until particles settle
           animate();
-          await wait(2200);
+          hintBottom.textContent = '祝你生日快乐！';
+          await wait(2600);
 
-          // morph to cake
-          mode = 'cake';
-          pts = getPointsFromDraw(drawCakeToOff, 6);
-          if(pts.length === 0) pts = [{x:particleCanvas.width/2,y:particleCanvas.height/2}];
-          assignTargets(pts);
-          await wait(1800);
-
-          // now cake particles进行聚合发散的循环
-          hintBottom.textContent = '愿你的未来如蛋糕般甜蜜...';
-          continuousCakePulse();
-        })();
-
-        function continuousCakePulse(){
-          let disperse = false;
-          let interval = setInterval(()=>{
-            disperse = !disperse;
-            if(disperse){
-              // give random offsets (发散)
-              for(let i=0;i<particles.length;i++){
-                const p = particles[i];
-                p.tx = (particleCanvas.width*0.5) + (Math.random()-0.5) * particleCanvas.width * 0.6;
-                p.ty = (particleCanvas.height*0.5) + (Math.random()-0.5) * particleCanvas.height * 0.6;
-              }
-            } else {
-              // return to cake shape (聚合)
-              const pts = getPointsFromDraw(drawCakeToOff, 6);
-              // sample if mismatch
-              let samplePts = pts;
-              if(samplePts.length > particles.length){
-                const step = Math.ceil(samplePts.length / particles.length);
-                const sp = [];
-                for(let i=0;i<samplePts.length;i+=step) sp.push(samplePts[i]);
-                samplePts = sp;
-              }
-              for(let i=0;i<particles.length;i++){
-                const t = samplePts[i % samplePts.length];
-                particles[i].tx = t.x + (Math.random()-0.5)*4;
-                particles[i].ty = t.y + (Math.random()-0.5)*4;
-              }
+          // alternate loops: cake <-> text ...
+          while(true){
+            // small disperse
+            mode = 'disperse';
+            for(let i=0;i<particles.length;i++){
+              particles[i].tx = particles[i].x + (Math.random()-0.5) * particleCanvas.width * 0.28;
+              particles[i].ty = particles[i].y + (Math.random()-0.5) * particleCanvas.height * 0.28;
             }
-          }, 2800);
-          // keep loop running; when user leaves page, cleanup
-        }
+            hintBottom.textContent = '祝福飘散...';
+            await wait(900);
+
+            // cake聚合
+            mode = 'cake';
+            let cakePts = getPointsFromDraw(drawBigThreeTierCake, 6);
+            if(cakePts.length === 0) cakePts = [{x:particleCanvas.width/2,y:particleCanvas.height/2}];
+            // sample if too many points
+            if(cakePts.length > particles.length){
+              const step = Math.ceil(cakePts.length / particles.length);
+              const sampled = [];
+              for(let i=0;i<cakePts.length;i+=step) sampled.push(cakePts[i]);
+              cakePts = sampled;
+            }
+            assignTargets(cakePts);
+            hintBottom.textContent = '愿你的未来如蛋糕般甜蜜...';
+            await wait(2800);
+
+            // small disperse again
+            mode = 'disperse';
+            for(let i=0;i<particles.length;i++){
+              particles[i].tx = particles[i].x + (Math.random()-0.5) * particleCanvas.width * 0.32;
+              particles[i].ty = particles[i].y + (Math.random()-0.5) * particleCanvas.height * 0.32;
+            }
+            hintBottom.textContent = '惊喜继续...';
+            await wait(900);
+
+            // text聚合
+            mode = 'text';
+            let textPts = getPointsFromDraw(drawTextToOff, 6);
+            if(textPts.length === 0) textPts = [{x:particleCanvas.width/2,y:particleCanvas.height/2}];
+            assignTargets(textPts);
+            hintBottom.textContent = '生日快乐！';
+            await wait(3000);
+            // loop continues
+          }
+        })();
 
         // util
         function wait(ms){ return new Promise(res => setTimeout(res, ms)); }
@@ -590,6 +717,12 @@
         window.addEventListener('resize', ()=>{
           particleCanvas.width = window.innerWidth;
           particleCanvas.height = window.innerHeight;
+        });
+
+        // cleanup on page hide/unload
+        window.addEventListener('beforeunload', ()=>{
+          cancelAnimationFrame(animationId);
+          stopMusicLoop();
         });
       }
 
