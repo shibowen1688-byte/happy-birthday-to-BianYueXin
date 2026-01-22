@@ -1,95 +1,610 @@
+```html name=index.html
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <title>边悦昕 · 生日快乐 🎂</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            margin: 0;
-            height: 100vh;
-            background: linear-gradient(135deg, #fbc2eb, #a6c1ee);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif;
-        }
+  <meta charset="utf-8" />
+  <title>边悦昕 · 生日快乐</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{
+      --bg1:#fbc2eb;
+      --bg2:#a6c1ee;
+      --card-bg: rgba(255,255,255,0.18);
+      --glass-blur:12px;
+      --accent1:#ff9a9e;
+      --accent2:#fad0c4;
+      --accent3:#a18cd1;
+      --accent4:#fbc2eb;
+      --bubble-radius:18px;
+      --name-color:#fff;
+    }
+    html,body{
+      height:100%;
+      margin:0;
+      font-family: "PingFang SC","Helvetica Neue",Arial,sans-serif;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
 
-        .card {
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(12px);
-            border-radius: 28px;
-            padding: 40px 30px;
-            width: 85%;
-            max-width: 420px;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-            animation: fadeIn 1.5s ease;
-        }
+    body{
+      background: linear-gradient(135deg,var(--bg1),var(--bg2));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+    }
 
-        h1 {
-            font-size: 36px;
-            color: #ffffff;
-            margin-bottom: 10px;
-        }
+    /* Modal (场景一) */
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:60;
+      pointer-events:auto;
+    }
+    .modal {
+      width:92%;
+      max-width:420px;
+      padding:28px;
+      border-radius:20px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08));
+      box-shadow:0 20px 40px rgba(0,0,0,0.18);
+      backdrop-filter: blur(var(--glass-blur));
+      text-align:center;
+      color:var(--name-color);
+      animation:modalIn .5s ease;
+    }
+    @keyframes modalIn{
+      from{transform:translateY(18px);opacity:0}
+      to{transform:translateY(0);opacity:1}
+    }
+    .modal h1{
+      margin:0 0 8px 0;
+      font-size:28px;
+    }
+    .modal p.hint{
+      margin:0 0 18px 0;
+      font-size:14px;
+      color:rgba(255,255,255,0.9);
+    }
+    .field{
+      display:flex;
+      gap:8px;
+      justify-content:center;
+      margin-bottom:16px;
+    }
+    input[type="password"]{
+      flex:1;
+      padding:10px 12px;
+      border-radius:12px;
+      border: none;
+      outline:none;
+      font-size:16px;
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+    .btn{
+      padding:10px 14px;
+      border-radius:12px;
+      border:none;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .btn.confirm{
+      background: linear-gradient(90deg,var(--accent1),var(--accent3));
+      color:#fff;
+    }
+    .btn.cancel{
+      background: rgba(255,255,255,0.12);
+      color:#fff;
+    }
+    .error{
+      color:#ffc1c1;
+      font-size:13px;
+      height:18px;
+      margin-top:4px;
+      visibility:hidden;
+    }
 
-        h2 {
-            font-size: 22px;
-            color: #fff;
-            font-weight: 400;
-            margin-bottom: 25px;
-        }
+    /* 场景二：弹出聊天气泡容器 */
+    .scene-chat{
+      position:fixed;
+      inset:0;
+      display:none;
+      z-index:30;
+      pointer-events:none;
+    }
+    .chat-area{
+      position: absolute;
+      left:50%;
+      transform:translateX(-50%);
+      top:6%;
+      width:92%;
+      max-width:980px;
+      height:78%;
+      background: rgba(255,255,255,0.06);
+      border-radius:24px;
+      padding:18px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+      overflow:hidden;
+      pointer-events:auto;
+      backdrop-filter: blur(6px);
+    }
+    .bubble{
+      position:absolute;
+      max-width:44%;
+      padding:10px 14px;
+      border-radius: var(--bubble-radius);
+      color:#fff;
+      font-size:15px;
+      line-height:1.3;
+      box-shadow:0 8px 20px rgba(0,0,0,0.18);
+      display:flex;
+      gap:8px;
+      align-items:center;
+      opacity:0;
+      transform:translateY(8px) scale(0.98);
+      transition: all 420ms cubic-bezier(.2,.9,.2,1);
+      background: linear-gradient(135deg,#ffffff22,#ffffff11);
+      backdrop-filter: blur(4px);
+    }
+    .bubble.show{
+      opacity:1;
+      transform:none;
+    }
+    .bubble .hello{
+      font-size:18px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
 
-        p {
-            font-size: 18px;
-            color: #ffffff;
-            line-height: 1.8;
-            margin: 10px 0;
-        }
+    /* 场景三：粒子画布 */
+    canvas#particle-canvas{
+      position:fixed;
+      inset:0;
+      z-index:20;
+      display:none;
+      background: linear-gradient(180deg, rgba(0,0,0,0.06), rgba(0,0,0,0.12));
+    }
 
-        .name {
-            font-weight: 600;
-            letter-spacing: 2px;
-        }
+    /* footer small hint */
+    .hint-bottom{
+      position:fixed;
+      bottom:14px;
+      left:50%;
+      transform:translateX(-50%);
+      color:rgba(255,255,255,0.85);
+      font-size:13px;
+      z-index:40;
+      text-align:center;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+    }
 
-        .footer {
-            margin-top: 30px;
-            font-size: 14px;
-            color: rgba(255,255,255,0.8);
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
+    @media (max-width:600px){
+      .bubble{ font-size:14px; max-width:72%;}
+      .chat-area{height:74%;}
+      .modal{padding:20px}
+    }
+  </style>
 </head>
 <body>
 
-    <!-- 🎵 背景音乐 -->
-    <audio autoplay loop>
-        <source src="https://music.163.com/song/media/outer/url?id=447926.mp3" type="audio/mpeg">
-    </audio>
-
-    <div class="card">
-        <h1>🎉 生日快乐 🎉</h1>
-        <h2 class="name">边悦昕</h2>
-
-        <p>愿你在新的一岁里</p>
-        <p>每天都被温柔和好运包围 ☁️</p>
-        <p>心中有光，脚下有路</p>
-        <p>所有期待都不被辜负 ✨</p>
-
-        <div class="footer">
-            <p>🎂 Happy Birthday 🎂</p>
-        </div>
+  <!-- 场景一：弹窗 -->
+  <div class="modal-backdrop" id="modalBackdrop" aria-hidden="false">
+    <div class="modal" role="dialog" aria-labelledby="modalTitle">
+      <h1 id="modalTitle">边悦昕</h1>
+      <p class="hint">请输入密码：对应阴历生日四位数字（例如：1204）</p>
+      <div class="field">
+        <input id="pwdInput" type="password" placeholder="阴历生日四位数字" maxlength="6" />
+        <button class="btn confirm" id="confirmBtn">确定</button>
+        <button class="btn cancel" id="cancelBtn">取消</button>
+      </div>
+      <div class="error" id="errMsg">密码错误，请重试。</div>
+      <p style="font-size:12px;color:rgba(255,255,255,0.9);margin-top:10px;">Tip: 密码是 1204（用于演示）</p>
     </div>
+  </div>
 
+  <!-- 场景二：聊天泡泡 -->
+  <div class="scene-chat" id="sceneChat">
+    <div class="chat-area" id="chatArea" aria-live="polite"></div>
+  </div>
+
+  <!-- 场景三：粒子画布 -->
+  <canvas id="particle-canvas"></canvas>
+
+  <div class="hint-bottom" id="hintBottom">等待祝福与惊喜...</div>
+
+  <script>
+    (function(){
+      const NAME = "边悦昕";
+      const CORRECT_PWD = "1204";
+      const modalBackdrop = document.getElementById('modalBackdrop');
+      const confirmBtn = document.getElementById('confirmBtn');
+      const cancelBtn = document.getElementById('cancelBtn');
+      const pwdInput = document.getElementById('pwdInput');
+      const errMsg = document.getElementById('errMsg');
+      const sceneChat = document.getElementById('sceneChat');
+      const chatArea = document.getElementById('chatArea');
+      const particleCanvas = document.getElementById('particle-canvas');
+      const hintBottom = document.getElementById('hintBottom');
+
+      confirmBtn.addEventListener('click', tryConfirm);
+      pwdInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') tryConfirm(); });
+      cancelBtn.addEventListener('click',()=>{ location.reload(); });
+
+      function tryConfirm(){
+        const v = pwdInput.value.trim();
+        if(v === CORRECT_PWD){
+          errMsg.style.visibility = 'hidden';
+          startScene2();
+        } else {
+          // 震动反馈
+          errMsg.style.visibility = 'visible';
+          shake(modalBackdrop.querySelector('.modal'));
+        }
+      }
+
+      function shake(el){
+        el.style.transition = 'transform 60ms';
+        el.style.transform = 'translateX(-8px)';
+        setTimeout(()=>{ el.style.transform = 'translateX(8px)'; }, 60);
+        setTimeout(()=>{ el.style.transform = 'translateX(0)'; }, 120);
+        setTimeout(()=>{ el.style.transition=''; el.style.transform=''; }, 220);
+      }
+
+      // ---------- 场景二：弹出 30 个聊天气泡 ----------
+      const messages = [
+        `${NAME}，生日快乐！愿你每天都像糖果一样甜！🍬`,
+        `亲爱的${NAME}，愿你的笑容永远灿烂🌟`,
+        `${NAME}，新的一岁心想事成，万事顺意🎉`,
+        `祝${NAME}今天被暖心包围，每刻都幸福💖`,
+        `${NAME}，愿你遇见美好与温柔☁️`,
+        `Happy Birthday ${NAME}！愿你青春永驻🎂`,
+        `${NAME}，愿你被喜欢的人温柔相待✨`,
+        `给${NAME}一个大大的拥抱🤗生日快乐！`,
+        `${NAME}，愿每天都值得被庆祝🎈`,
+        `愿你在新的一岁拥有更多小确幸🍀`,
+        `${NAME}，愿每个愿望都慢慢开花🌸`,
+        `给${NAME}的祝福：平安、喜乐、好运🍀`,
+        `${NAME}，愿你越长越可爱，越活越漂亮💐`,
+        `愿你每天醒来心里都是柔软和光💛 ${NAME}`,
+        `${NAME}，世界因你更温柔✨生日快乐！`,
+        `小小的祝福给大大的${NAME}：永远快乐🎁`,
+        `${NAME}，愿你被世界温柔对待，温柔以待世界🕊️`,
+        `祝${NAME}笑容常开，心情常晴🌞`,
+        `${NAME}，愿你所有不易都被温柔化解🌈`,
+        `愿${NAME}未来都被好运陪伴🍀`,
+        `${NAME}，生日快乐，愿你心中常有光✨`,
+        `祝你可爱如初，温柔永在 ${NAME} 💕`,
+        `${NAME}，愿梦想逐渐清晰，步步可达🚀`,
+        `给${NAME}的今天，许下最甜的愿望🍰`,
+        `${NAME}，愿你被爱，且被温柔以待❤️`,
+        `愿边悦昕的一岁比一岁精彩！🎊`,
+        `${NAME}，愿你每个明天都值得期待🌷`,
+        `给${NAME}的祝福：平凡中藏着温柔与惊喜✨`,
+        `${NAME}，生日快乐！愿你永远拥有童心和勇气🩷`
+      ]; // 30 条祝福
+
+      function startScene2(){
+        // 隐藏 modal
+        modalBackdrop.style.display = 'none';
+        // 显示 chat area
+        sceneChat.style.display = 'block';
+        hintBottom.textContent = '祝福弹幕进行中...';
+        spawnBubblesSequentially(messages, 650, ()=> {
+          // 所有弹出后等待几秒再进入场景三
+          hintBottom.textContent = '即将进入惊喜画面...';
+          setTimeout(()=>{ startScene3(); }, 2500);
+        });
+      }
+
+      function spawnBubblesSequentially(list, interval = 600, cb){
+        const areaRect = chatArea.getBoundingClientRect();
+        const paddingTop = 18;
+        const rowHeight = 54; // 每个泡泡垂直间距
+        let rows = Math.floor((areaRect.height - paddingTop*2) / rowHeight);
+        if(rows < 6) rows = 6;
+        // we will place them in multiple columns, alternating left/right to avoid遮挡
+        let topOffsets = []; // store used positions for each column side
+        for(let i=0;i<rows;i++){
+          topOffsets.push(paddingTop + i*rowHeight);
+        }
+        // shuffle topOffsets for variety
+        topOffsets = topOffsets.sort(()=>0.5 - Math.random());
+
+        let index = 0;
+        const timers = [];
+        const placedPositions = []; // to check overlap (basic)
+        const leftMargin = 18;
+        const rightMargin = 18;
+        const bubbleWidthLeft = chatArea.clientWidth * 0.44;
+        const bubbleWidthRight = chatArea.clientWidth * 0.44;
+
+        const intervalId = setInterval(()=>{
+          if(index >= list.length){
+            clearInterval(intervalId);
+            if(cb) cb();
+            return;
+          }
+          const text = list[index];
+          const bubble = document.createElement('div');
+          bubble.className = 'bubble';
+          const side = (index % 2 === 0) ? 'left' : 'right';
+          // simple placement that avoids stacking: calculate row = index % rows
+          const row = index % rows;
+          const top = paddingTop + row*rowHeight + Math.floor(row/rows)*4; // slight variance
+          bubble.style.top = `${top}px`;
+          if(side === 'left'){
+            bubble.style.left = `${leftMargin + Math.random()*8}px`;
+            bubble.style.background = `linear-gradient(135deg,#ffd6e0,#ffd1f0)`;
+            bubble.style.color = '#6b2146';
+          } else {
+            bubble.style.right = `${rightMargin + Math.random()*8}px`;
+            bubble.style.background = `linear-gradient(135deg,#cfe9ff,#d7f0ff)`;
+            bubble.style.color = '#0b3a66';
+          }
+          bubble.innerHTML = `<span class="hello">🎀</span><div class="txt">${text}</div>`;
+          chatArea.appendChild(bubble);
+          // trigger show animation
+          requestAnimationFrame(()=> { bubble.classList.add('show'); });
+          index++;
+        }, interval);
+
+        timers.push(intervalId);
+      }
+
+      // ---------- 场景三：粒子文字与蛋糕聚合 ----------
+      function startScene3(){
+        // 隐藏聊天区
+        sceneChat.style.display = 'none';
+        hintBottom.textContent = '祝福凝聚中...';
+        // show canvas
+        particleCanvas.style.display = 'block';
+        particleCanvas.width = window.innerWidth;
+        particleCanvas.height = window.innerHeight;
+        const ctx = particleCanvas.getContext('2d');
+        const off = document.createElement('canvas');
+        const offCtx = off.getContext('2d');
+
+        let particles = [];
+        let targets = [];
+        let mode = 'text'; // 'text' -> 'cake' -> 'pulse'
+        let animationId;
+        const maxParticles = 1400;
+
+        // helper: sample points from drawn text or shape
+        function getPointsFromDraw(funcDraw, sample=6){
+          off.width = particleCanvas.width;
+          off.height = particleCanvas.height;
+          offCtx.clearRect(0,0,off.width,off.height);
+          funcDraw(offCtx, off.width, off.height);
+          const img = offCtx.getImageData(0,0,off.width,off.height).data;
+          const pts = [];
+          for(let y=0;y<off.height;y+=sample){
+            for(let x=0;x<off.width;x+=sample){
+              const idx = (y*off.width + x)*4 + 3;
+              if(img[idx] > 128){
+                pts.push({x,y});
+              }
+            }
+          }
+          return pts;
+        }
+
+        // draw text "边悦昕" and "Happy birthday" centered, two lines
+        function drawTextToOff(ctx, w, h){
+          ctx.clearRect(0,0,w,h);
+          ctx.fillStyle = "#ffffff";
+          const bigSize = Math.round(Math.min(w, h) / 8);
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          // 中文上行，英文下行
+          ctx.font = `bold ${bigSize}px "PingFang SC", "Helvetica Neue", Arial, sans-serif`;
+          ctx.fillText(NAME, w/2, h/2 - bigSize*0.28);
+          ctx.font = `600 ${Math.round(bigSize*0.55)}px "PingFang SC", Arial, sans-serif`;
+          ctx.fillText("Happy birthday", w/2, h/2 + bigSize*0.8);
+        }
+
+        // draw a simple cake shape (rectangle + candle) centered
+        function drawCakeToOff(ctx, w, h){
+          ctx.clearRect(0,0,w,h);
+          const cx = w/2;
+          const cy = h/2 + 60;
+          // cake base
+          ctx.fillStyle = "#ffd1c1";
+          const cakeW = Math.min(w,600) * 0.5;
+          const cakeH = cakeW * 0.36;
+          roundRect(ctx, cx - cakeW/2, cy - cakeH/2, cakeW, cakeH, 18, true, false);
+          // icing layer
+          ctx.fillStyle = "#fff7f7";
+          roundRect(ctx, cx - cakeW/2, cy - cakeH/2 - 18, cakeW, 36, 22, true, false);
+          // candle
+          const candleX = cx;
+          const candleY = cy - cakeH/2 - 52;
+          ctx.fillStyle = "#ffee58";
+          roundRect(ctx, candleX - 6, candleY, 12, 44, 4, true, false);
+          // flame
+          const g = ctx.createRadialGradient(candleX, candleY-10,2,candleX, candleY-22,18);
+          g.addColorStop(0,'#fff1b4');
+          g.addColorStop(0.5,'#ffb74d');
+          g.addColorStop(1,'#ff7043');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.ellipse(candleX, candleY-22, 10, 14, 0, 0, Math.PI*2);
+          ctx.fill();
+        }
+
+        function roundRect(ctx,x,y,w,h,r, fill, stroke){
+          if(typeof r === 'number') r = {tl:r,tr:r,br:r,bl:r};
+          ctx.beginPath();
+          ctx.moveTo(x + r.tl, y);
+          ctx.lineTo(x + w - r.tr, y);
+          ctx.quadraticCurveTo(x + w, y, x + w, y + r.tr);
+          ctx.lineTo(x + w, y + h - r.br);
+          ctx.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
+          ctx.lineTo(x + r.bl, y + h);
+          ctx.quadraticCurveTo(x, y + h, x, y + h - r.bl);
+          ctx.lineTo(x, y + r.tl);
+          ctx.quadraticCurveTo(x, y, x + r.tl, y);
+          ctx.closePath();
+          if(fill) ctx.fill();
+          if(stroke) ctx.stroke();
+        }
+
+        // initialize particles to random positions
+        function initParticles(count){
+          particles = [];
+          for(let i=0;i<count;i++){
+            particles.push({
+              x: Math.random()*particleCanvas.width,
+              y: Math.random()*particleCanvas.height,
+              vx: (Math.random()-0.5)*2,
+              vy: (Math.random()-0.5)*2,
+              tx: Math.random()*particleCanvas.width,
+              ty: Math.random()*particleCanvas.height,
+              size: Math.random()*1.6 + 0.8,
+              color: `hsl(${Math.random()*40 + 10}deg 80% 75%)`,
+            });
+          }
+        }
+
+        // map points to particles by assigning tx,ty
+        function assignTargets(pts){
+          targets = pts.slice();
+          // reduce if too many
+          if(targets.length > maxParticles){
+            // sample evenly
+            const step = Math.ceil(targets.length / maxParticles);
+            const sampled = [];
+            for(let i=0;i<targets.length;i+=step) sampled.push(targets[i]);
+            targets = sampled;
+          }
+          // ensure particle count
+          if(particles.length < targets.length){
+            initParticles(targets.length);
+          }
+          // assign
+          for(let i=0;i<targets.length;i++){
+            const p = particles[i];
+            const t = targets[i];
+            p.tx = t.x + (Math.random()-0.5)*2;
+            p.ty = t.y + (Math.random()-0.5)*2;
+            p.size = Math.random()*1.8 + 0.7;
+            p.color = (mode === 'cake') ? `hsl(${Math.random()*30 + 10}deg 80% 70%)` : `hsl(${Math.random()*350}deg 80% 70%)`;
+          }
+        }
+
+        // animation loop
+        function animate(){
+          ctx.clearRect(0,0,particleCanvas.width,particleCanvas.height);
+          // subtle background vignette
+          const g = ctx.createLinearGradient(0,0,0,particleCanvas.height);
+          g.addColorStop(0, 'rgba(255,255,255,0.02)');
+          g.addColorStop(1,'rgba(0,0,0,0.04)');
+          ctx.fillStyle = g;
+          ctx.fillRect(0,0,particleCanvas.width,particleCanvas.height);
+
+          // move particles towards tx,ty with easing
+          for(let i=0;i<particles.length;i++){
+            const p = particles[i];
+            // easing
+            p.vx += (p.tx - p.x) * 0.02;
+            p.vy += (p.ty - p.y) * 0.02;
+            // damping
+            p.vx *= 0.88;
+            p.vy *= 0.88;
+            p.x += p.vx;
+            p.y += p.vy;
+
+            // draw
+            ctx.beginPath();
+            ctx.fillStyle = p.color;
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+            ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+          }
+
+          animationId = requestAnimationFrame(animate);
+        }
+
+        // sequence control: text -> cake -> continuous cake pulse
+        (async function sequence(){
+          // form text
+          mode = 'text';
+          let pts = getPointsFromDraw(drawTextToOff, 6);
+          if(pts.length === 0) pts = [{x:particleCanvas.width/2,y:particleCanvas.height/2}];
+          initParticles(Math.min(pts.length, maxParticles));
+          assignTargets(pts);
+          // animate for some time until particles settle
+          animate();
+          await wait(2200);
+
+          // morph to cake
+          mode = 'cake';
+          pts = getPointsFromDraw(drawCakeToOff, 6);
+          if(pts.length === 0) pts = [{x:particleCanvas.width/2,y:particleCanvas.height/2}];
+          assignTargets(pts);
+          await wait(1800);
+
+          // now cake particles进行聚合发散的循环
+          hintBottom.textContent = '愿你的未来如蛋糕般甜蜜...';
+          continuousCakePulse();
+        })();
+
+        function continuousCakePulse(){
+          let disperse = false;
+          let interval = setInterval(()=>{
+            disperse = !disperse;
+            if(disperse){
+              // give random offsets (发散)
+              for(let i=0;i<particles.length;i++){
+                const p = particles[i];
+                p.tx = (particleCanvas.width*0.5) + (Math.random()-0.5) * particleCanvas.width * 0.6;
+                p.ty = (particleCanvas.height*0.5) + (Math.random()-0.5) * particleCanvas.height * 0.6;
+              }
+            } else {
+              // return to cake shape (聚合)
+              const pts = getPointsFromDraw(drawCakeToOff, 6);
+              // sample if mismatch
+              let samplePts = pts;
+              if(samplePts.length > particles.length){
+                const step = Math.ceil(samplePts.length / particles.length);
+                const sp = [];
+                for(let i=0;i<samplePts.length;i+=step) sp.push(samplePts[i]);
+                samplePts = sp;
+              }
+              for(let i=0;i<particles.length;i++){
+                const t = samplePts[i % samplePts.length];
+                particles[i].tx = t.x + (Math.random()-0.5)*4;
+                particles[i].ty = t.y + (Math.random()-0.5)*4;
+              }
+            }
+          }, 2800);
+          // keep loop running; when user leaves page, cleanup
+        }
+
+        // util
+        function wait(ms){ return new Promise(res => setTimeout(res, ms)); }
+
+        // handle resize
+        window.addEventListener('resize', ()=>{
+          particleCanvas.width = window.innerWidth;
+          particleCanvas.height = window.innerHeight;
+        });
+      }
+
+      // 自动给输入框聚焦
+      pwdInput.focus();
+
+      // Accessibility: allow ESC to reload/cancel
+      document.addEventListener('keydown', (e)=>{
+        if(e.key === 'Escape') location.reload();
+      });
+    })();
+  </script>
 </body>
 </html>
+```
