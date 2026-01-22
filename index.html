@@ -392,18 +392,16 @@
           return pts;
         }
 
-        // draw text "边悦昕" and "Happy birthday" centered, two lines
+        // draw text "生日快乐！" centered (single line)
         function drawTextToOff(ctx, w, h){
           ctx.clearRect(0,0,w,h);
           ctx.fillStyle = "#ffffff";
-          const bigSize = Math.round(Math.min(w, h) / 8);
+          const bigSize = Math.round(Math.min(w, h) / 6); // a bit larger for single-line
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          // 中文上行，英文下行
           ctx.font = `bold ${bigSize}px "PingFang SC", "Helvetica Neue", Arial, sans-serif`;
-          ctx.fillText(NAME, w/2, h/2 - bigSize*0.28);
-          ctx.font = `600 ${Math.round(bigSize*0.55)}px "PingFang SC", Arial, sans-serif`;
-          ctx.fillText("Happy birthday", w/2, h/2 + bigSize*0.8);
+          ctx.fillText("生日快乐！", w/2, h/2 - 30);
+          // optional smaller subtitle removed to show only "生日快乐！"
         }
 
         // draw a simple cake shape (rectangle + candle) centered
@@ -606,4 +604,3 @@
   </script>
 </body>
 </html>
-```
